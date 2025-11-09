@@ -1,4 +1,5 @@
 // api/handler.js
+import fetch from "node-fetch";
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, get, set, update, remove } from 'firebase/database';
 
