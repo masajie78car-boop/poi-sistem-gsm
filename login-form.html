@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login Form</title>
+<style>
+body { margin:0;padding:0;background:linear-gradient(135deg, cyan, #00ff88);height:100vh;display:flex;justify-content:center;align-items:center;font-family:Arial;}
+.container { background:white;padding:25px;width:90%;max-width:380px;border-radius:12px;box-shadow:0 0 20px rgba(0,0,0,0.2);text-align:center;}
+input { width:100%;padding:12px;margin:10px 0;border-radius:8px;border:1px solid #ccc;}
+button { width:100%;padding:15px;background:#008f5a;color:white;border:none;border-radius:8px;font-size:18px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>LOGIN ADMIN</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+  <button id="loginBtn">Masuk</button>
+  <p id="note" style="color:red"></p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+
+// === REPLACE with your Firebase config (from Project Settings -> Web App) ===
+const firebaseConfig = {
+  apiKey: "REPLACE_API_KEY",
+  authDomain: "REPLACE_AUTH_DOMAIN",
+  projectId: "REPLACE_PROJECT_ID",
+  storageBucket: "REPLACE_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_MESSAGING_SENDER_ID",
+  appId: "REPLACE_APP_ID"
+};
+// ==========================================================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('password').value;
+  document.getElementById('note').innerText = '';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // on success go to dashboard which auto-redirects
+    window.location.href = '/dashboard/index.html';
+  } catch(err) {
+    document.getElementById('note').innerText = 'Login gagal: ' + err.message;
+  }
+});
+</script>
+</body>
+</html>
