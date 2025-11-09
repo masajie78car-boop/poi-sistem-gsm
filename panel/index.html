@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mall Nusantara - Panel Admin</title>
+  <style>body{margin:0;font-family:Poppins,Arial;background:#f5f7fb;color:#333}header{background:#007bff;color:#fff;padding:12px;text-align:center}.tanggal{font-size:0.9em;color:#eaf3ff;margin-top:6px}main{max-width:980px;margin:12px auto;padding:10px}.section{background:#fff;padding:12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:12px}h2{margin:0;color:#007bff}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:8px;border:1px solid #e6ebf5;text-align:center;font-size:14px}th{background:#f1f7ff}.actions{display:flex;gap:6px;justify-content:center}button.action{padding:6px;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:13px}.btn-panggil{background:#0069d9}.btn-selesai{background:#28a745}.btn-hapus{background:#dc3545}.empty{color:#888;font-style:italic}@media(max-width:480px){.actions{flex-direction:row}button.action{padding:6px 8px;font-size:12px}}.logout{position:fixed;right:12px;top:12px;background:#fff;border-radius:6px;padding:6px 8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);cursor:pointer}</style>
+</head>
+<body>
+  <header>
+    <h1>Antrian Mall Nusantara</h1>
+    <div class="tanggal" id="tanggal"></div>
+    <button class="logout" id="logoutBtn">Logout</button>
+  </header>
+  <main>
+    <div class="section">
+      <h2>Lobby Aktif (Veteran)</h2>
+      <table id="aktif-table">
+        <thead><tr><th>No</th><th>No Polisi</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody><tr><td colspan="4" class="empty">Belum ada data</td></tr></tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h2>Buffer (Menunggu)</h2>
+      <table id="buffer-table">
+        <thead><tr><th>No</th><th>No Polisi</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody><tr><td colspan="4" class="empty">Belum ada data</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js';
+import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "REPLACE_API_KEY",
+  authDomain: "REPLACE_AUTH_DOMAIN",
+  projectId: "REPLACE_PROJECT_ID",
+  storageBucket: "REPLACE_STORAGE_BUCKET",
+  messagingSenderId: "REPLACE_MESSAGING_SENDER_ID",
+  appId: "REPLACE_APP_ID",
+  databaseURL: "REPLACE_DATABASE_URL"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const auth = getAuth(app);
+const lokasi = 'mall_nusantara';
+
+function updateTanggal(){ const t=new Date(); const hari=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"]; document.getElementById('tanggal').innerText = `${hari[t.getDay()]}, ${t.getDate()}-${t.getMonth()+1}-${t.getFullYear()}`;}
+updateTanggal();
+
+onAuthStateChanged(auth,user=>{ if(!user) location.href='/login.html'; });
+
+function setEmpty(tableId){ document.querySelector(`#${tableId} tbody`).innerHTML = '<tr><td colspan="4" class="empty">Belum ada data</td></tr>'; }
+
+function renderRows(tableId,items){ const tbody = document.querySelector(`#${tableId} tbody`); tbody.innerHTML=''; if(!items.length){ setEmpty(tableId); return;} items.forEach((item,idx)=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${idx+1}</td><td>${item.noPol}</td><td>${item.status}</td><td><div class="actions"><button class="action btn-panggil" data-nopol="${item.noPol}">📣</button><button class="action btn-selesai" data-nopol="${item.noPol}">✅</button><button class="action btn-hapus" data-nopol="${item.noPol}">🗑️</button></div></td>`; tbody.appendChild(tr); }); attachButtons(); }
+
+onValue(ref(db, `pangkalan/${lokasi}/antrian`), snap=>{ const data = snap.val() || {}; const arr = Object.values(data).map(d=>({...d})); arr.sort((a,b)=> (a.createdAt || '') > (b.createdAt || '') ? 1 : -1); const aktif = arr.filter(x=> x.status === 'aktif'); const buffer = arr.filter(x=> x.status === 'buffer'); renderRows('aktif-table', aktif); renderRows('buffer-table', buffer); });
+
+function attachButtons(){ document.querySelectorAll('.btn-hapus').forEach(btn=>{ btn.onclick = async ()=>{ const noPol = btn.dataset.nopol; if(!confirm(`Hapus ${noPol}?`)) return; await fetch(`/api/handler?action=hapus&lokasi=${lokasi}&noPol=${encodeURIComponent(noPol)}`); }; }); document.querySelectorAll('.btn-selesai').forEach(btn=>{ btn.onclick = async ()=>{ const noPol = btn.dataset.nopol; await fetch(`/api/handler?action=selesai&lokasi=${lokasi}&noPol=${encodeURIComponent(noPol)}`); }; }); document.querySelectorAll('.btn-panggil').forEach(btn=>{ btn.onclick = async ()=>{ const noPol = btn.dataset.nopol; const res = await fetch(`/api/handler?action=panggil&lokasi=${lokasi}&noPol=${encodeURIComponent(noPol)}`); if(!res.ok) alert('Gagal panggil WA'); }; }); }
+
+document.getElementById('logoutBtn').onclick = ()=>{ signOut(auth).then(()=>{ location.href='/login.html'; }); };
+</script>
+</body>
+</html>
