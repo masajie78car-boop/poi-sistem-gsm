@@ -1,10 +1,10 @@
-DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Stasiun Jatinegara - Panel Admin</title>
-  <style>body{font-size: 12px;margin:0;font-family:Poppins,Arial;background:#f5f7fb;color:#333}header{background:#009688;color:#fff;padding:6px;text-align:center}.tanggal{font-size:0.9em;color:#eaf3ff;margin-top:6px}main{max-width:980px;margin:1px auto;padding:1px}.section{background:#fff;padding:10px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:12px}h2{font-size: 16px;margin:0;color:#009688}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{padding:1px;border:1px solid #e6ebf5;text-align:center;font-size:12px}th{background:#f1f7ff}.actions{display:flex;gap:6px;justify-content:center}button.action{padding:6px;border:0;border-radius:2px;color:#fff;cursor:pointer;font-size:12px}.btn-panggil{background:#00796b}.btn-selesai{background:#28a745}.btn-hapus{background:#dc3545}.empty{color:#888;font-style:italic}@media(max-width:480px){.actions{flex-direction:row}button.action{padding:6px 8px;font-size:12px}}.logout{position:fixed;center:12px;bottom:12px;background:#fff;border-radius:12px;padding:6px 10px;box-shadow:0 2px 12px rgba(0,0,0,0.08);cursor:pointer}</style>
+  <style>body{font-size: 12px ;margin:0;font-family:Poppins,Arial;background:#f5f7fb;color:#333}header{background:#009688;color:#fff;padding:5px;text-align:center}.tanggal{font-size:0.9em;color:#eaf3ff;margin-top:6px}main{max-width:980px;margin:0px auto;padding:0px}.section{background:#fff;padding:10px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,0.05);margin-bottom:0px}h2{margin:0;color:#009688}table{width:100%;border-collapse:collapse;margin-top:2px}th,td{padding:0px;border:1px solid #e6ebf5;text-align:center;font-size:12px}th{background:#f1f7ff}.actions{display:flex;gap:6px;justify-content:center}button.action{padding:6px;border:0;border-radius:6px;color:#fff;cursor:pointer;font-size:13px}.btn-panggil{background:#00796b}.btn-selesai{background:#28a745}.btn-hapus{background:#dc3545}.empty{color:#888;font-style:italic}@media(max-width:480px){.actions{flex-direction:row}button.action{padding:6px 8px;font-size:12px}}.logout{position:fixed;center:12px;bottom:12px;background:#fff;border-radius:10px;padding:6px 8px;box-shadow:0 2px 6px rgba(0,0,0,0.08);cursor:pointer}</style>
 </head>
 <body>
   <header>
@@ -28,7 +28,7 @@ DOCTYPE html>
       </table>
     </div>
   </main>
-
+        
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js';
 import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.4.0/firebase-database.js';
