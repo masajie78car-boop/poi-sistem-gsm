@@ -4,7 +4,7 @@
   "type": "module",
   "main": "api/handler.js",
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "dependencies": {
     "firebase": "^10.4.0",
