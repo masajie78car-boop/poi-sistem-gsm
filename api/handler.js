@@ -248,7 +248,7 @@ async function sendToGroup(lokasi, text) {
 
   if (!groupId) return;
 
-  await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+  await fetch(`https://graph.facebook.com/v17.0/${phoneId}/messages`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
