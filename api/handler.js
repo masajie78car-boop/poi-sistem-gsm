@@ -143,17 +143,7 @@ function todayJakarta() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' });
 }
 
-async function ensureDailyReset(lokasi) {
-  const metaRef = ref(db, `pangkalan/${lokasi}/_meta`);
-  const snapMeta = await get(metaRef);
-  const meta = snapMeta.val() || {};
-  const lastReset = meta.lastResetDate || null;
-  const today = todayJakarta();
-  if (lastReset !== today) {
-    await set(ref(db, `pangkalan/${lokasi}/antrian`), {});
-    await set(metaRef, { lastResetDate: today });
-  }
-}
+// handler.js - GANTI FUNGSI sendMessage INI
 
 async function sendMessage(to, text) {
   const token = process.env.ACCESS_TOKEN;
@@ -164,16 +154,18 @@ async function sendMessage(to, text) {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to, text: { body: text } })
     });
-
-    // --- BARIS LOG BARU ---
+    
+    // --- PENAMBAHAN LOG KRITIS ---
     if (!r.ok) {
       const txt = await r.text();
+      // LOG ini akan muncul jika Meta menolak pesan (misal: token salah)
       console.error('WA send failed. Status:', r.status, 'Body:', txt); 
     } else {
-      console.log('WA message sent successfully to:', to);
+      // LOG ini akan muncul jika pesan berhasil dikirimkan ke Meta
+      console.log('WA message sent successfully to:', to); 
     }
-    // --- AKHIR LOG BARU ---
-
+    // --- AKHIR PENAMBAHAN LOG ---
+    
   } catch(err) {
     console.error('Fetch error sendMessage', err);
   }
