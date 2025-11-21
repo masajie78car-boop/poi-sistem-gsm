@@ -164,10 +164,16 @@ async function sendMessage(to, text) {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to, text: { body: text } })
     });
+
+    // --- BARIS LOG BARU ---
     if (!r.ok) {
       const txt = await r.text();
-      console.error('WA send error', r.status, txt);
+      console.error('WA send failed. Status:', r.status, 'Body:', txt); 
+    } else {
+      console.log('WA message sent successfully to:', to);
     }
+    // --- AKHIR LOG BARU ---
+
   } catch(err) {
     console.error('Fetch error sendMessage', err);
   }
