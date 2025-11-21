@@ -1,18 +1,7 @@
 // api/handler.js
 import fetch from "node-fetch";
-import * as admin from 'firebase-admin'; // Tambahkan Admin SDK
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, get, set, update, remove } from 'firebase/database';
-
-// Inisialisasi Admin SDK
-// PENTING: Untuk serverless, Admin SDK perlu Service Account Key.
-// Biasanya, Anda bisa menggunakan admin.initializeApp() jika service account tersedia di lingkungan (ENV).
-try {
-  admin.initializeApp();
-} catch(e) {
-  // Catch error jika sudah diinisialisasi (praktik di lingkungan hot-reloading)
-}
-
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -30,79 +19,52 @@ const db = getDatabase(app);
 export const config = { api: { bodyParser: true } };
 
 export default async function handler(req, res) {
-  
-  // --- VERIFIKASI KEAMANAN ADMIN ACTIONS BARU ---
-  // Blok ini menggantikan semua logika req.method === 'GET' yang lama
-  if (req.query?.action) {
+  // Admin actions
+  if (req.method === 'GET' && req.query?.action) {
     const action = req.query.action;
-    
-    // Semua aksi admin yang memodifikasi data harus diverifikasi
-    if (action === 'panggil' || action === 'selesai' || action === 'hapus') {
-      const token = req.headers.authorization?.split('Bearer ')[1];
-      
-      if (!token) {
-        return res.status(401).send('Unauthorized: Token missing');
+    const lokasi = req.query.lokasi;
+    const noPol = req.query.noPol;
+    if (process.env.ADMIN_KEY && req.query.admin_key !== process.env.ADMIN_KEY) {
+      return res.status(401).send('Unauthorized');
+    }
+    try {
+      if (action === 'panggil') {
+        const snap = await get(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`));
+        const data = snap.val();
+        if (!data) return res.status(404).send('Not found');
+        if (!data.from) return res.status(400).send('No phone number on record');
+        await sendMessage(data.from, `Antrian ${data.noPol} silahkan menuju lobby`);
+        return res.status(200).send('ok');
       }
-      
-      try {
-        // 1. Verifikasi Token dengan Admin SDK
-        await admin.auth().verifyIdToken(token); 
-      } catch(e) {
-        return res.status(401).send('Unauthorized: Invalid token');
-      }
-
-      // 2. Cek Metode HTTP yang Benar dari Front-End yang baru
-      if (
-        (action === 'panggil' && req.method !== 'POST') ||
-        (action === 'selesai' && req.method !== 'PUT') ||
-        (action === 'hapus' && req.method !== 'DELETE')
-      ) {
-        return res.status(405).send(`Method Not Allowed for action ${action}. Use ${action === 'hapus' ? 'DELETE' : action === 'selesai' ? 'PUT' : 'POST'}`);
-      }
-
-      // --- LOGIKA AKSI ADMIN (Sama seperti kode Anda) ---
-      const lokasi = req.query.lokasi;
-      const noPol = req.query.noPol;
-      
-      try {
-        if (action === 'panggil') {
-          const snap = await get(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`));
-          const data = snap.val();
-          if (!data) return res.status(404).send('Not found');
-          if (!data.from) return res.status(400).send('No phone number on record');
-          await sendMessage(data.from, `Antrian ${data.noPol} silahkan menuju lobby`);
-          return res.status(200).send('ok');
+      if (action === 'selesai') {
+        const snap = await get(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`));
+        const item = snap.val();
+        if (!item) return res.status(404).send('Not found');
+        await update(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`), { status: 'selesai' });
+        const allSnap = await get(ref(db, `pangkalan/${lokasi}/antrian`));
+        const all = allSnap.val() || {};
+        const arr = Object.values(all).map(x => ({ ...x }));
+        arr.sort((a,b) => (a.createdAt || '') > (b.createdAt || '') ? 1 : -1);
+        const aktif = arr.filter(x => x.status === 'aktif');
+        const buffer = arr.filter(x => x.status === 'buffer');
+        if (aktif.length < 3 && buffer.length > 0) {
+          const promote = buffer[0];
+          await update(ref(db, `pangkalan/${lokasi}/antrian/${promote.noPol}`), { status: 'aktif' });
         }
-        if (action === 'selesai') {
-          const snap = await get(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`));
-          const item = snap.val();
-          if (!item) return res.status(404).send('Not found');
-          await update(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`), { status: 'selesai' });
-          const allSnap = await get(ref(db, `pangkalan/${lokasi}/antrian`));
-          const all = allSnap.val() || {};
-          const arr = Object.values(all).map(x => ({ ...x }));
-          arr.sort((a,b) => (a.createdAt || '') > (b.createdAt || '') ? 1 : -1);
-          const aktif = arr.filter(x => x.status === 'aktif');
-          const buffer = arr.filter(x => x.status === 'buffer');
-          if (aktif.length < 3 && buffer.length > 0) {
-            const promote = buffer[0];
-            await update(ref(db, `pangkalan/${lokasi}/antrian/${promote.noPol}`), { status: 'aktif' });
-          }
-          return res.status(200).send('ok');
-        }
-        if (action === 'hapus') {
-          await remove(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`));
-          return res.status(200).send('ok');
-        }
-      } catch(err) {
-        console.error('Admin action error', err);
-        return res.status(500).send('Server error');
+        return res.status(200).send('ok');
       }
+      if (action === 'hapus') {
+        await remove(ref(db, `pangkalan/${lokasi}/antrian/${noPol}`));
+        return res.status(200).send('ok');
+      }
+      return res.status(400).send('Unknown action');
+    } catch(err) {
+      console.error('Admin action error', err);
+      return res.status(500).send('Server error');
     }
   }
-  // --- END: VERIFIKASI KEAMANAN ADMIN ACTIONS ---
 
-  // Webhook verification (GET) - Tidak Berubah
+  // Webhook verification
   if (req.method === 'GET') {
     const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
     const mode = req.query['hub.mode'];
@@ -114,7 +76,7 @@ export default async function handler(req, res) {
     return res.status(403).send('Verification failed');
   }
 
-  // Webhook receive (POST) - Tidak Berubah (Fokus masalah Anda di sini)
+  // Webhook receive
   if (req.method === 'POST') {
     // respond early
     res.status(200).send('EVENT_RECEIVED');
@@ -147,7 +109,7 @@ export default async function handler(req, res) {
   return res.status(405).send('Method Not Allowed');
 }
 
-// Helper functions (handleDaftar, handleUpdate, todayJakarta, ensureDailyReset, sendMessage) tetap sama
+// helpers
 async function handleDaftar(from, text, lokasi) {
   const parts = text.split(/\s+/);
   const noPol = (parts[1] || '').toUpperCase();
