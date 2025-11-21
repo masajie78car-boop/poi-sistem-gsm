@@ -110,39 +110,52 @@ export default async function handler(req, res) {
   }
 
   // Webhook receive (POST) - DI SINI ensureDailyReset DIPANGGIL
-  if (req.method === 'POST') {
+  // handler.js - GANTI SELURUH BLOK if (req.method === 'POST')
+
+if (req.method === 'POST') {
+    // 1. Log Payload (KRITIS UNTUK DEBUGGING)
+    console.log('Received Webhook Payload:', JSON.stringify(req.body, null, 2));
+
     res.status(200).send('EVENT_RECEIVED'); // Respons cepat untuk WA
+    
     try {
-      const change = req.body.entry?.[0]?.changes?.[0]?.value;
-      const message = change?.messages?.[0];
-      if (!message) return;
-      const from = message.from;
-      const text = (message.text?.body || '').trim();
-      const textLower = text.toLowerCase();
-      
-      // PANGGILAN FUNGSI ensureDailyReset (Pastikan definisinya ada di bawah)
-      await ensureDailyReset('mall_nusantara');
-      await ensureDailyReset('stasiun_jatinegara');
-      
-      if (textLower.startsWith('#daftarantrian')) {
-        await handleDaftar(from, text, 'mall_nusantara');
-      } else if (textLower.startsWith('#updateantrian')) {
-        await handleUpdate(from, 'mall_nusantara');
-      } else if (textLower.startsWith('#daftarlist')) {
-        await handleDaftar(from, text, 'stasiun_jatinegara');
-      } else if (textLower.startsWith('#updatelist')) {
-        await handleUpdate(from, 'stasiun_jatinegara');
-      } else {
-        await sendMessage(from, '⚠️ Format tidak dikenal.');
-      }
+        const change = req.body.entry?.[0]?.changes?.[0]?.value;
+        const message = change?.messages?.[0];
+        
+        if (!message) {
+            console.log('Payload is NOT a message. Silent exit.');
+            return; // Exit jika bukan pesan
+        }
+        
+        const from = message.from;
+        const text = (message.text?.body || '').trim();
+        const textLower = text.toLowerCase();
+        
+        // 2. Log Teks yang Diterima
+        console.log('WA Received Text:', textLower, 'from:', from); 
+
+        // PANGGILAN FUNGSI ensureDailyReset (Pastikan definisinya ada di bawah)
+        await ensureDailyReset('mall_nusantara');
+        await ensureDailyReset('stasiun_jatinegara');
+        
+        if (textLower.startsWith('#daftarantrian')) {
+          await handleDaftar(from, text, 'mall_nusantara');
+        } else if (textLower.startsWith('#updateantrian')) {
+          await handleUpdate(from, 'mall_nusantara');
+        } else if (textLower.startsWith('#daftarlist')) {
+          await handleDaftar(from, text, 'stasiun_jatinegara');
+        } else if (textLower.startsWith('#updatelist')) {
+          await handleUpdate(from, 'stasiun_jatinegara');
+        } else {
+          await sendMessage(from, '⚠️ Format tidak dikenal.');
+        }
     } catch(err) {
-      console.error('Webhook error:', err.message); // Tampilkan pesan error spesifik
+      console.error('Webhook error:', err.message);
     }
     return;
-  }
-
-  return res.status(405).send('Method Not Allowed');
 }
+
+// ... helper functions (handleDaftar, sendMessage, dll) harus tetap di bawah
 
 // =================================================================
 // SEMUA HELPER FUNCTIONS HARUS ADA DI SINI (SETELAH export default)
