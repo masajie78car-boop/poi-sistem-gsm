@@ -1,4 +1,4 @@
-// api/handler.js - KODE LENGKAP YANG DIKOREKSI
+// api/handler.js - KODE LENGKAP DAN UTUH
 import fetch from "node-fetch";
 import * as admin from 'firebase-admin'; // Admin SDK
 import { initializeApp } from 'firebase/app';
@@ -109,10 +109,8 @@ export default async function handler(req, res) {
     return res.status(403).send('Verification failed');
   }
 
-  // Webhook receive (POST) - DI SINI ensureDailyReset DIPANGGIL
-  // handler.js - GANTI SELURUH BLOK if (req.method === 'POST')
-
-if (req.method === 'POST') {
+  // Webhook receive (POST) - DI SINI LOGGING WA DITAMBAHKAN
+  if (req.method === 'POST') {
     // 1. Log Payload (KRITIS UNTUK DEBUGGING)
     console.log('Received Webhook Payload:', JSON.stringify(req.body, null, 2));
 
@@ -123,7 +121,7 @@ if (req.method === 'POST') {
         const message = change?.messages?.[0];
         
         if (!message) {
-            console.log('Payload is NOT a message. Silent exit.');
+            console.log('Payload is NOT a message (e.g., status update). Silent exit.');
             return; // Exit jika bukan pesan
         }
         
@@ -134,7 +132,6 @@ if (req.method === 'POST') {
         // 2. Log Teks yang Diterima
         console.log('WA Received Text:', textLower, 'from:', from); 
 
-        // PANGGILAN FUNGSI ensureDailyReset (Pastikan definisinya ada di bawah)
         await ensureDailyReset('mall_nusantara');
         await ensureDailyReset('stasiun_jatinegara');
         
@@ -150,15 +147,16 @@ if (req.method === 'POST') {
           await sendMessage(from, '⚠️ Format tidak dikenal.');
         }
     } catch(err) {
-      console.error('Webhook error:', err.message);
+      console.error('Webhook processing error:', err.message);
     }
     return;
+  }
+
+  return res.status(405).send('Method Not Allowed');
 }
 
-// ... helper functions (handleDaftar, sendMessage, dll) harus tetap di bawah
-
 // =================================================================
-// SEMUA HELPER FUNCTIONS HARUS ADA DI SINI (SETELAH export default)
+// SEMUA HELPER FUNCTIONS
 // =================================================================
 
 async function handleDaftar(from, text, lokasi) {
